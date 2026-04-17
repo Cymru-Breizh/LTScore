@@ -17,10 +17,11 @@ class AnalysisResult:
 
 
 class LTScore:
-    def __init__(self, input_text=None, *, path=None):
+    def __init__(self, language, input_text=None, *, path=None):
         self.test_path = "assets/text-sample.txt"
-        self.source_url = "https://api.techiaith.cymru/cysill/v2/dl6"
+        self.source_url = "http://localhost:8010/v2/check"
         self.input_text = ""
+        self.language = language
 
         if input_text:
             self.input_text = input_text
@@ -43,26 +44,32 @@ class LTScore:
         content = path.read_text(encoding="utf-8")
 
         return content
-    
 
     def find_errors(self):
         import string
-
+        language = self.language
         text = self.input_text
         url = self.source_url
         headers = {"Content-Type": "application/json"}
-        data = {"text": text, "format": "text", "language": "cy", "max_errors": 1000}
+        data = {"text": text, "format": "text", "language": language}
 
-        # Remove pure spelling mistakes to keep grammatical ones (e.g."NASA" is flagged as a mistake by Cysill)
-        res = requests.post(url, headers=headers, json=data).json()["result"]
+        try:
+            res = requests.post(url, headers=headers, data=data).json()["matches"]
+        except requests.exceptions.ConnectionError:
+            raise Exception(
+                "Could not connect to a LanguageTool server. Please ensure there is one running on port 8010."
+            )
+
         mistakes = [
             Mistake(
-                category=n["rule_category"]["category"],
-                subcategory=n["rule_category"]["subcategory"],
-                rule_name=n["rule_name"],
+                category=n["rule"]["issueType"],
+                subcategory=n["rule"]["category"]["id"],
+                rule_name=n["rule"]["id"],
             )
-            for n in res if not n["is_spelling"]
+            for n in res
+            if n["type"]["typeName"] != "UnknownWord"
         ]
+        print(mistakes)
 
         text_len = len(
             text.translate(str.maketrans("", "", string.punctuation)).split(" ")
@@ -83,9 +90,47 @@ def run_cli():
     import sys
 
     parser = argparse.ArgumentParser(
-        prog="cysgor",
-        description="""!--{|Cymraeg|}--! Amlapiwr Cysill sy'n rhoi sgôr gramadegolrwydd i destunnau Cymraeg. Sgoriau mwy sy'n golygu mwy o wallau gramadegol. Sgoriau llau sy'n golygu bod gramadegolwydd yn well. !--{|English|}--! 
-        A wrapper for the Cysill Welsh spell checker to measure the grammaticality of Welsh texts. Higher scores mean more grammatical mistakes. A smaller score means a higher degree of grammaticality.""",
+        prog="ltscore",
+        description="""
+        A wrapper for the LanguageTool multilingual spell checker to measure the grammaticality of continuous texts. Higher scores mean more grammatical mistakes. A smaller score means a higher degree of grammaticality, zero being no mistake detected.""",
+    )
+
+    parser.add_argument(
+        "--language",
+        "-l",
+        help="""Language code for the text being analyzed. Language codes:
+ar (Arabic), 
+ast (Asturian), 
+be (Belarusian), 
+br (Breton), 
+ca (Catalan), 
+da (Danish), 
+de (German), 
+el (Greek), 
+en (English), 
+eo (Esperanto), 
+es (Spanish), 
+fa (Persian), 
+fr (French), 
+ga (Irish), 
+gl (Galician), 
+it (Italian), 
+ja (Japanese), 
+km (Khmer), 
+nl (Dutch), 
+pl (Polish), 
+pt (Portuguese), 
+ro (Romanian), 
+ru (Russian), 
+sk (Slovak), 
+sl (Slovenian), 
+sv (Swedish), 
+ta (Tamil), 
+tl (Tagalog), 
+uk (Ukrainian), 
+zh (Chinese), 
+crh (Crimean Tatar)
+        """,
     )
 
     parser.add_argument("input_text",
@@ -108,15 +153,15 @@ def run_cli():
 
     # 1. Check if a positional string was provided first
     if args.input_text:
-        cysgorWrapper = Cysgor(args.input_text)
+        wrapper = LTScore(language=args.language, input_text=args.input_text)
     # 2. Check if a path flag was provided
     elif args.path:
-        cysgorWrapper = Cysgor(path=args.path)
+        wrapper = LTScore(language=args.language, path=args.path)
     # 3. Only check for piped data if no arguments were given
     elif not sys.stdin.isatty():
         piped_data = sys.stdin.read()
         if piped_data.strip():
-            cysgorWrapper = Cysgor(piped_data)
+            wrapper = LTScore(language=args.language, input_text=piped_data)
         else:
             print("Error: Piped input was empty.", file=sys.stderr)
             sys.exit(1)
@@ -124,6 +169,5 @@ def run_cli():
         print("Error: No input detected.", file=sys.stderr)
         sys.exit(1)
 
-    res = cysgorWrapper.find_errors()
+    res = wrapper.find_errors()
     print(res.score)
-

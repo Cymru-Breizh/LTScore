@@ -27,7 +27,7 @@ ltscore -l br-FR "Mae hen gwlad fy tadau yn annwyl i mi!"
 
 ```sh
 # With a -p or --path flag
-ltscore --path src/ltscore/assets/text-sample-br.txt
+ltscore -l br-FR --path src/ltscore/assets/text-sample-br.txt
 ```
 
 or alternatively with the pipe operator:

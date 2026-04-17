@@ -4,14 +4,25 @@ from ltscore.main import LTScore, AnalysisResult
 
 # Utility to get the path to your sample file
 SAMPLE_FILE = (
-    Path(__file__).parent.parent / "src" / "cysgor" / "assets" / "text-sample.txt"
+    Path(__file__).parent.parent / "src" / "ltscore" / "assets" / "text-sample-br.txt"
 )
 
+
+def test_language_tool_is_running():
+    """Test that the CLI checks if the LanguageTool server is running in port 8010."""
+    result = subprocess.run(
+        ["ltscore", "-l br-FR", "--path", str(SAMPLE_FILE)], capture_output=True, text=True
+    )
+    assert result.returncode == 0
+    # Check if the output is a float-like string (the score)
+    score = float(result.stdout.strip())
+    assert 0 <= score
+    assert score == 0.5807200929152149
 
 def test_cli_path_flag():
     """Test the CLI using the --path argument."""
     result = subprocess.run(
-        ["cysgor", "--path", str(SAMPLE_FILE)], capture_output=True, text=True
+        ["ltscore", "--path", str(SAMPLE_FILE)], capture_output=True, text=True
     )
     assert result.returncode == 0
     # Check if the output is a float-like string (the score)
@@ -23,14 +34,14 @@ def test_cli_path_flag():
 def test_cli_positional_text():
     """Test the CLI using a direct string of Welsh text."""
     test_text = "Mae hen gwlad fy tadau yn annwyl i mi!"
-    result = subprocess.run(["cysgor", test_text], capture_output=True, text=True)
+    result = subprocess.run(["ltscore", test_text], capture_output=True, text=True)
     assert result.returncode == 0
     assert float(result.stdout.strip()) == 22.22222222222222
 
 
 def test_cli_missing_args():
     """Test that the CLI raises the custom exception message when no args are provided."""
-    result = subprocess.run(["cysgor"], capture_output=True, text=True)
+    result = subprocess.run(["ltscore"],capture_output=True, text=True)
     assert result.returncode != 0
 
 
