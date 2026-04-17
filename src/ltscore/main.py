@@ -69,7 +69,6 @@ class LTScore:
             for n in res
             if n["type"]["typeName"] != "UnknownWord"
         ]
-        print(mistakes)
 
         text_len = len(
             text.translate(str.maketrans("", "", string.punctuation)).split(" ")
@@ -99,39 +98,37 @@ def run_cli():
         "--language",
         "-l",
         help="""Language code for the text being analyzed. Language codes:
-ar (Arabic), 
-ast (Asturian), 
-be (Belarusian), 
-br (Breton), 
-ca (Catalan), 
-da (Danish), 
-de (German), 
-el (Greek), 
-en (English), 
-eo (Esperanto), 
-es (Spanish), 
-fa (Persian), 
-fr (French), 
-ga (Irish), 
-gl (Galician), 
-it (Italian), 
-ja (Japanese), 
-km (Khmer), 
-nl (Dutch), 
-pl (Polish), 
-pt (Portuguese), 
-ro (Romanian), 
-ru (Russian), 
-sk (Slovak), 
-sl (Slovenian), 
-sv (Swedish), 
-ta (Tamil), 
-tl (Tagalog), 
-uk (Ukrainian), 
-zh (Chinese), 
-crh (Crimean Tatar)
-        """,
-    )
+            ar (Arabic), 
+            ast (Asturian), 
+            be (Belarusian), 
+            br (Breton), 
+            ca (Catalan), 
+            da (Danish), 
+            de (German), 
+            el (Greek), 
+            en (English), 
+            eo (Esperanto), 
+            es (Spanish), 
+            fa (Persian), 
+            fr (French), 
+            ga (Irish), 
+            gl (Galician), 
+            it (Italian), 
+            ja (Japanese), 
+            km (Khmer), 
+            nl (Dutch), 
+            pl (Polish), 
+            pt (Portuguese), 
+            ro (Romanian), 
+            ru (Russian), 
+            sk (Slovak), 
+            sl (Slovenian), 
+            sv (Swedish), 
+            ta (Tamil), 
+            tl (Tagalog), 
+            uk (Ukrainian), 
+            zh (Chinese), 
+            crh (Crimean Tatar)""")
 
     parser.add_argument("input_text",
       nargs="?",
@@ -140,13 +137,7 @@ crh (Crimean Tatar)
     parser.add_argument(
         "--path",
         "-p",
-        help="Path to the text-sample.txt or data file"
-        )
-
-    parser.add_argument(
-        "--test",
-        "-t",
-        help="Path to the text-sample.txt or data file"
+        help="Path to the data file"
         )
 
     args = parser.parse_args()

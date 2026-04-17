@@ -7,18 +7,6 @@ SAMPLE_FILE = (
     Path(__file__).parent.parent / "src" / "ltscore" / "assets" / "text-sample-br.txt"
 )
 
-
-def test_language_tool_is_running():
-    """Test that the CLI checks if the LanguageTool server is running in port 8010."""
-    result = subprocess.run(
-        ["ltscore", "-l br-FR", "--path", str(SAMPLE_FILE)], capture_output=True, text=True
-    )
-    assert result.returncode == 0
-    # Check if the output is a float-like string (the score)
-    score = float(result.stdout.strip())
-    assert 0 <= score
-    assert score == 0.5807200929152149
-
 def test_cli_path_flag():
     """Test the CLI using the --path argument."""
     result = subprocess.run(

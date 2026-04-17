@@ -22,18 +22,18 @@ There are two ways to use the CLI, either by entering a text file's path, or dir
 
 ```sh
 # With a text as a positional character
-ltscore -l br-FR "Mae hen gwlad fy tadau yn annwyl i mi!"
+ltscore -l br "Kalz a tud a zo amañ!"
 ```
 
 ```sh
 # With a -p or --path flag
-ltscore -l br-FR --path src/ltscore/assets/text-sample-br.txt
+ltscore -l br -p ./src/ltscore/assets/text-sample-br.txt 
 ```
 
 or alternatively with the pipe operator:
 
 ```sh
-cat src/ltscore/assets/text-sample.txt | ltscore 
+cat src/ltscore/assets/text-sample-br.txt | ltscore -l br
 ```
 
 ## LTScore as a library
@@ -44,9 +44,9 @@ One can also use this package as a python library:
 from ltscore import get_score, get_mistakes
 
 # get the scores
-df["scores"] = df["texts"].apply(get_score)
+df["scores"] = df.apply(lambda row: get_score(row["text"], language=row["language"]), axis=1)
 # returns a list of mistakes for each text
-df["mistakes"] = df["texts"].apply(get_mistakes)
+df["mistakes"] = df.apply(lambda row: get_mistakes(row["text"], language=row["language"]), axis=1)
 ```
 
 
