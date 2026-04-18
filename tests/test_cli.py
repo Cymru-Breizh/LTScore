@@ -10,21 +10,21 @@ SAMPLE_FILE = (
 def test_cli_path_flag():
     """Test the CLI using the --path argument."""
     result = subprocess.run(
-        ["ltscore", "--path", str(SAMPLE_FILE)], capture_output=True, text=True
+        ["ltscore", "-l", "br", "--path", str(SAMPLE_FILE)], capture_output=True, text=True
     )
     assert result.returncode == 0
     # Check if the output is a float-like string (the score)
     score = float(result.stdout.strip())
     assert 0 <= score
-    assert score == 0.5807200929152149
+    assert score == 0.2222222222222222
 
 
 def test_cli_positional_text():
     """Test the CLI using a direct string of Welsh text."""
-    test_text = "Mae hen gwlad fy tadau yn annwyl i mi!"
-    result = subprocess.run(["ltscore", test_text], capture_output=True, text=True)
+    test_text = "Kalz a tud a zo amañ."
+    result = subprocess.run(["ltscore", "-l", "br", test_text], capture_output=True, text=True)
     assert result.returncode == 0
-    assert float(result.stdout.strip()) == 22.22222222222222
+    assert float(result.stdout.strip()) == 16.666666666666668
 
 
 def test_cli_missing_args():
@@ -35,8 +35,8 @@ def test_cli_missing_args():
 
 def test_module_logic():
     """Test the LTScore directly as a python module."""
-    text = "Hwn yw'r prawf."
-    wrapper = LTScore(text)
+    text = "Kalz a dud a zo amañ."
+    wrapper = LTScore(language="br", input_text=text)
     result = wrapper.find_errors()
 
     # Verify the custom dataclass structure
