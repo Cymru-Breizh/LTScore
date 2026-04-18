@@ -1,0 +1,14 @@
+name: Publish to PyPI
+on:
+  push:
+    tags: ['v*'] # Triggers when you push a tag like v0.1.0
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+      - run: pip install build && python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1
