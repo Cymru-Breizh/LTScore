@@ -1,4 +1,5 @@
 import requests
+from cysgor import get_score, get_mistakes
 from dataclasses import dataclass
 from typing import List
 

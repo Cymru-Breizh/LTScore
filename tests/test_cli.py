@@ -6,6 +6,9 @@ from ltscore.main import LTScore, AnalysisResult
 SAMPLE_FILE = (
     Path(__file__).parent.parent / "src" / "ltscore" / "assets" / "text-sample-br.txt"
 )
+SAMPLE_FILE_CY = (
+    Path(__file__).parent.parent / "src" / "ltscore" / "assets" / "text-sample-cy.txt"
+)
 
 def test_cli_path_flag():
     """Test the CLI using the --path argument."""
@@ -17,6 +20,20 @@ def test_cli_path_flag():
     score = float(result.stdout.strip())
     assert 0 <= score
     assert score == 0.2222222222222222
+
+
+def test_cli_welsh():
+    """Test the CLI using the --path argument in Welsh."""
+    result = subprocess.run(
+        ["ltscore", "-l", "cy", "--path", str(SAMPLE_FILE_CY)],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    # Check if the output is a float-like string (the score)
+    score = float(result.stdout.strip())
+    assert 0 <= score
+    assert score == 0.5807200929152149
 
 
 def test_cli_positional_text():
