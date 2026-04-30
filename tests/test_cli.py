@@ -1,4 +1,5 @@
 import subprocess
+import polars as pl
 from pathlib import Path
 from ltscore.main import LTScore, AnalysisResult
 
@@ -67,3 +68,27 @@ def test_module_logic():
         from ltscore.main import Mistake
 
         assert isinstance(result.mistakes[0], Mistake)
+
+
+def test_add_tlscore_column_to_dataframe():
+    """Test that the CLI updates files containing a (nd)json with an additional `ltscore` column containing the score of the target column."""
+
+    entry = """{"source": "'Mañ an dud o tont.", "target": "Les gens arrivent.", "prediction": "Les gens vient."}
+{"source": "Un devezh dilabour eo Lun Fask.", "target": "Le lundi de Pâques est un jour férié."}"""
+    # Create a temporary file with the entry
+    temp_file = Path(__file__).parent / "temp_test.ndjson"
+    temp_file.write_text(entry)
+    
+    # Run the CLI to process the file
+    subprocess.run(["ltscore", "-t", "target", "-l", "fr", "--path", str(temp_file)], capture_output=True, text=True)
+
+    # Read the updated file and check for the new column
+    df = pl.read_ndjson(temp_file)
+    ltscore_col = df.get_column(
+        "ltscore", default=pl.Series("ltscore", [None] * len(df))
+    )
+
+    # Remove the temporary file
+    temp_file.unlink()
+    assert ltscore_col is not [None] * len(df)
+    assert ltscore_col.dtype == pl.Float64
