@@ -54,6 +54,10 @@ class LTScore:
         headers = {"Content-Type": "application/json"}
         data = {"text": text, "format": "text", "language": language}
 
+        if language == "cy":
+            score = get_score(text)
+            mistakes = get_mistakes(text)
+            return AnalysisResult(score=score, mistakes=mistakes)
         try:
             res = requests.post(url, headers=headers, data=data).json()["matches"]
         except requests.exceptions.ConnectionError:
