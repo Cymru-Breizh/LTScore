@@ -108,6 +108,7 @@ def run_cli():
             be (Belarusian), 
             br (Breton), 
             ca (Catalan), 
+            cy (Welsh), 
             da (Danish), 
             de (German), 
             el (Greek), 
