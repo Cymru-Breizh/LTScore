@@ -36,6 +36,21 @@ or alternatively with the pipe operator:
 cat src/ltscore/assets/text-sample-br.txt | ltscore -l br
 ```
 
+## JSON file processing
+Given a file `data.ndjson` with the following content:
+
+```
+{"source": "'Mañ an dud o tont.", "target": "Les gens arrivent.", "prediction": "Les gens vient."}
+{"source": "Un devezh dilabour eo Lun Fask.", "target": "Le lundi de Pâques est un jour férié.", "prediction": "Le lundi de Pâques ai un jours fériée."}
+```
+
+running `ltscore -t prediction -l fr -p data.ndjson` and will get the file updated in the following way:
+
+```
+{"source":"'Mañ an dud o tont.","target":"Les gens arrivent.","prediction":"Les gens vient.","ltscore":33.333333333333336,"mistake_categories":["CAT_GRAMMAIRE"]}
+{"source":"Un devezh dilabour eo Lun Fask.","target":"Le lundi de Pâques est un jour férié.","prediction":"Le lundi de Pâques ai un jours fériée.","ltscore":25.0,"mistake_categories":["CAT_HOMONYMES_PARONYMES","AGREEMENT"]}
+```
+
 ## LTScore as a library
 
 One can also use this package as a python library:

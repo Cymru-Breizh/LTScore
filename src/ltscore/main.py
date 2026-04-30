@@ -95,19 +95,15 @@ class LTScore:
 
         df = pl.read_ndjson(self.path)
 
-        print(df)
         scores = []
         mistakes = []
         for row in df[target_column]:
-            print(f"Processing row: {row}")
             self.input_text = row
             res = self.find_errors()
             scores.append(res.score)
             mistakes.append(
                 [m.subcategory for m in res.mistakes] if res.mistakes else None
             )
-
-        print(df)
 
         df = df.with_columns(pl.Series("ltscore", scores))
         df = df.with_columns(pl.Series("mistake_categories", mistakes))
