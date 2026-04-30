@@ -1,3 +1,5 @@
+from curses import wrapper
+
 import requests
 from cysgor import get_score, get_mistakes
 from dataclasses import dataclass
@@ -28,6 +30,7 @@ class LTScore:
             self.input_text = input_text
         elif path:
             self.input_text = self.get_text(path)
+            self.path = path
         else:
             raise Exception("__ARGUMENT MISSING__: Missing a path or a text.")
 
@@ -51,7 +54,6 @@ class LTScore:
         language = self.language
         text = self.input_text
         url = self.source_url
-        headers = {"Content-Type": "application/json"}
         data = {"text": text, "format": "text", "language": language}
 
         if language == "cy":
@@ -59,7 +61,7 @@ class LTScore:
             mistakes = get_mistakes(text)
             return AnalysisResult(score=score, mistakes=mistakes)
         try:
-            res = requests.post(url, headers=headers, data=data).json()["matches"]
+            res = requests.post(url, data=data).json()["matches"]
         except requests.exceptions.ConnectionError:
             raise Exception(
                 "Could not connect to a LanguageTool server. Please ensure there is one running on port 8010."
@@ -87,6 +89,30 @@ class LTScore:
         }
 
         return AnalysisResult(score=score, mistakes= mistakes)
+
+    def add_column_to_ndjson(self, target_column):
+        import polars as pl
+
+        df = pl.read_ndjson(self.path)
+
+        print(df)
+        scores = []
+        mistakes = []
+        for row in df[target_column]:
+            print(f"Processing row: {row}")
+            self.input_text = row
+            res = self.find_errors()
+            scores.append(res.score)
+            mistakes.append(
+                [m.subcategory for m in res.mistakes] if res.mistakes else None
+            )
+
+        print(df)
+
+        df = df.with_columns(pl.Series("ltscore", scores))
+        df = df.with_columns(pl.Series("mistake_categories", mistakes))
+        df.write_ndjson(self.path)
+
 
 def run_cli():
     """Entry point for the CLI"""
@@ -141,6 +167,12 @@ def run_cli():
       help="Text to be be parsed")
 
     parser.add_argument(
+        "--target",
+        "-t",
+        help="Target column (must use with path to a ndjson file)"
+        )
+    
+    parser.add_argument(
         "--path",
         "-p",
         help="Path to the data file"
@@ -154,6 +186,9 @@ def run_cli():
     # 2. Check if a path flag was provided
     elif args.path:
         wrapper = LTScore(language=args.language, path=args.path)
+        if args.target:
+            wrapper.add_column_to_ndjson(target_column=args.target)
+            
     # 3. Only check for piped data if no arguments were given
     elif not sys.stdin.isatty():
         piped_data = sys.stdin.read()
