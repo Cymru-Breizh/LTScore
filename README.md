@@ -47,8 +47,8 @@ Given a file `data.ndjson` with the following content:
 running `ltscore -t prediction -l fr -p data.ndjson` and will get the file updated in the following way:
 
 ```
-{"source":"'Mañ an dud o tont.","target":"Les gens arrivent.","prediction":"Les gens vient.","ltscore":33.333333333333336,"mistake_categories":["CAT_GRAMMAIRE"]}
-{"source":"Un devezh dilabour eo Lun Fask.","target":"Le lundi de Pâques est un jour férié.","prediction":"Le lundi de Pâques ai un jours fériée.","ltscore":25.0,"mistake_categories":["CAT_HOMONYMES_PARONYMES","AGREEMENT"]}
+{"source":"'Mañ an dud o tont.","target":"Les gens arrivent.","prediction":"Les gens vient.","ltscore":33.333333333333336,"mistakes_categories":["CAT_GRAMMAIRE"]}
+{"source":"Un devezh dilabour eo Lun Fask.","target":"Le lundi de Pâques est un jour férié.","prediction":"Le lundi de Pâques ai un jours fériée.","ltscore":25.0,"mistakes_categories":["CAT_HOMONYMES_PARONYMES","AGREEMENT"]}
 ```
 
 ## LTScore as a library

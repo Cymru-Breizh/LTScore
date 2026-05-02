@@ -90,7 +90,7 @@ class LTScore:
 
         return AnalysisResult(score=score, mistakes= mistakes)
 
-    def add_column_to_ndjson(self, target_column):
+    def add_column_to_ndjson(self, target_column="prediction"):
         import polars as pl
 
         df = pl.read_ndjson(self.path)
@@ -106,8 +106,97 @@ class LTScore:
             )
 
         df = df.with_columns(pl.Series("ltscore", scores))
-        df = df.with_columns(pl.Series("mistake_categories", mistakes))
+        df = df.with_columns(pl.Series("mistakes_categories", mistakes))
         df.write_ndjson(self.path)
+        return df
+
+    def generate_report(self, target_column="prediction"):
+        import polars as pl
+        df = pl.read_ndjson(self.path)
+
+        # Step 0: Check whether the file was processed already
+        ltscore_col = df.get_column("ltscore", default=pl.Series("ltscore", [None] * len(df)))
+        if not (ltscore_col.dtype == pl.Float64):
+            self.add_column_to_ndjson(target_column=target_column)
+            df = pl.read_ndjson(self.path)
+
+        # Step 1: Flatten the mistakes_categories and count frequencies
+        mistake_counts = df.select(
+            pl.col("mistakes_categories")
+            .explode()
+            .value_counts()
+            .alias("mistake_counts")
+        ).unnest("mistake_counts")
+        # remove rows where the mistakes_categories is `null`
+        mistake_counts = mistake_counts.filter(pl.col("mistakes_categories").is_not_null())
+        print(mistake_counts)
+
+        # Step 2: Calculate percentages
+        total_rows = df.height
+        mistake_percentages = mistake_counts.with_columns(
+            (pl.col("count") / total_rows * 100).alias("percentage")
+        ).filter(pl.col("percentage") > 1)
+        print(mistake_percentages)
+
+        # Step 3: For each mistake above 1%, find the sentences with highest and lowest ltscore
+        result = []
+        has_reference = "target" in df.columns  # Check once outside the loop
+
+        for row in mistake_percentages.iter_rows():
+            mistake_category = row[0]
+            percentage = row[2]
+
+            # Filter and sort
+            sentences_with_mistake = (
+                df.filter(pl.col("mistakes_categories").list.contains(mistake_category))
+                .sort("ltscore", descending=True)
+            )
+
+            if sentences_with_mistake.height == 0:
+                continue
+
+            # Access first and last rows
+            highest_ltscore_sentence = sentences_with_mistake[target_column][0]
+            highest_ltscore = sentences_with_mistake["ltscore"][0]
+
+            lowest_ltscore_sentence = sentences_with_mistake[target_column][-1]
+            lowest_ltscore = sentences_with_mistake["ltscore"][-1]
+
+            dict_entry = {
+                "mistake": mistake_category,
+                "percentage": percentage,
+                "highest_ltscore_sentence": highest_ltscore_sentence,
+                "highest_ltscore": highest_ltscore,
+                "lowest_ltscore_sentence": lowest_ltscore_sentence,
+                "lowest_ltscore": lowest_ltscore,
+            }
+
+            if has_reference:
+                dict_entry["reference_highest_ltscore_sentence"] = sentences_with_mistake["target"][0]
+                dict_entry["reference_lowest_ltscore_sentence"] = sentences_with_mistake["target"][-1]
+
+            result.append(dict_entry)
+
+        # Print the result
+        for entry in result:
+            print(f"Mistake: {entry['mistake']}")
+            print(
+                f"  - Least grammatical sentence: '{entry['highest_ltscore_sentence']}' (ltscore: {entry['highest_ltscore']})"
+            )
+            if "reference_highest_ltscore_sentence" in entry:
+                print(
+                    f"    - Reference sentence: '{entry['reference_highest_ltscore_sentence']}'"
+                )
+            print(
+                f"  - Most grammatical sentence: '{entry['lowest_ltscore_sentence']}' (ltscore: {entry['lowest_ltscore']})"
+            )
+            if "reference_lowest_ltscore_sentence" in entry:
+                print(
+                    f"    - Reference sentence: '{entry['reference_lowest_ltscore_sentence']}'"
+                )
+            print()
+
+        return None
 
 
 def run_cli():
@@ -167,7 +256,14 @@ def run_cli():
         "-t",
         help="Target column (must use with path to a ndjson file)"
         )
-    
+
+    parser.add_argument(
+        "--report",
+        "-r",
+        action=argparse.BooleanOptionalAction,
+        help="Generate a detailed report of errors in a file takes a --target argument defaulting to 'prediction' (must use with path to a ndjson or jsonl file)"
+        )
+
     parser.add_argument(
         "--path",
         "-p",
@@ -179,12 +275,21 @@ def run_cli():
     # 1. Check if a positional string was provided first
     if args.input_text:
         wrapper = LTScore(language=args.language, input_text=args.input_text)
+
+        res = wrapper.find_errors()
+        print(res.score)
+
     # 2. Check if a path flag was provided
     elif args.path:
         wrapper = LTScore(language=args.language, path=args.path)
-        if args.target:
+        if args.report:
+            wrapper.generate_report(target_column=args.target)
+        elif args.target:
             wrapper.add_column_to_ndjson(target_column=args.target)
-            
+        else:
+            res = wrapper.find_errors()
+            print(res.score)
+
     # 3. Only check for piped data if no arguments were given
     elif not sys.stdin.isatty():
         piped_data = sys.stdin.read()
@@ -193,9 +298,9 @@ def run_cli():
         else:
             print("Error: Piped input was empty.", file=sys.stderr)
             sys.exit(1)
+
+        res = wrapper.find_errors()
+        print(res.score)
     else:
         print("Error: No input detected.", file=sys.stderr)
         sys.exit(1)
-
-    res = wrapper.find_errors()
-    print(res.score)
