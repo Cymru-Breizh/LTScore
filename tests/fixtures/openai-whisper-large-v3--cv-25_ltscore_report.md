@@ -44,36 +44,36 @@ The following sections provide examples of the most and least grammatical senten
 ### 3.2.1 RUMM_KEMMADUR
 
 - Least grammatical sentence containing this category of mistake:
-  - LTScore: 100.0
+  - LTScore: 100.00
   - Segment: *Pen.*
   - Reference: *pemp*
 
 - Most grammatical sentence containing this category of mistake:
-  - LTScore: 5.2631578947368425
+  - LTScore: 5.26
   - Segment: *E vez ya denno diwar-benn an digresko an ink reiz rat bihan apoeus e vez ar reazite merr anez.*
   - Reference: *Evezhiadennou dwb an digreskoù ha n'int ket reizh rak bihan ha pouezus evit ar re a zegemer anezho.*
 
 ### 3.2.2 RUMM_GER_MELL
 
 - Least grammatical sentence containing this category of mistake:
-  - LTScore: 66.66666666666667
+  - LTScore: 66.67
   - Segment: *Un an zu.*
   - Reference: *unan zu.*
 
 - Most grammatical sentence containing this category of mistake:
-  - LTScore: 5.0
+  - LTScore: 5.00
   - Segment: *Eo chezhepañ eo bet strez ken an ko d'an diad-lab o rat a o, evit ar meret a reiz t'roul.*
   - Reference: *E Japan eo bet strizh-kenañ kod an dilhad-labour atav, evit ar merc’hed dreist-holl.*
 
 ### 3.2.3 RUMM_A_BEP_SEURT
 
 - Least grammatical sentence containing this category of mistake:
-  - LTScore: 40.0
+  - LTScore: 40.00
   - Segment: *Blazo eo eo c'hom !*
   - Reference: *Plasoù a chom !*
 
 - Most grammatical sentence containing this category of mistake:
-  - LTScore: 5.2631578947368425
+  - LTScore: 5.26
   - Segment: *Ar pepet eo eo eo mont war internet a klask t'eo tout-rout ivez war benn a l'err di bavet.*
   - Reference: *Ar pep aesañ eo mont war internet ha klask titouroù diwar-benn al lec’h dibabet.*
 

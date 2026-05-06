@@ -282,14 +282,14 @@ class LTScore:
         for i, entry in enumerate(result):
             md_report += f"### 3.2.{i+1} {entry['mistake']}\n\n"
             md_report += f"- Least grammatical sentence containing this category of mistake:\n"
-            md_report += f"  - LTScore: {entry['highest_ltscore']}\n"
+            md_report += f"  - LTScore: {entry['highest_ltscore']:.2f}\n"
             md_report += f"  - Segment: *{entry['highest_ltscore_sentence'].strip()}*\n"
 
             if "reference_highest_ltscore_sentence" in entry:
                 md_report += f"  - Reference: *{entry['reference_highest_ltscore_sentence'].strip()}*\n\n"
 
             md_report += f"- Most grammatical sentence containing this category of mistake:\n"
-            md_report += f"  - LTScore: {entry['lowest_ltscore']}\n"
+            md_report += f"  - LTScore: {entry['lowest_ltscore']:.2f}\n"
             md_report += f"  - Segment: *{entry['lowest_ltscore_sentence'].strip()}*\n"
 
             if "reference_lowest_ltscore_sentence" in entry:
