@@ -37,6 +37,9 @@ cat src/ltscore/assets/text-sample-br.txt | ltscore -l br
 ```
 
 ## JSON file processing
+LTScore can also process some files for short analysis.
+
+### Adding LTScore to an existing file
 Given a file `data.ndjson` with the following content:
 
 ```
@@ -50,6 +53,16 @@ running `ltscore -t prediction -l fr -p data.ndjson` and will get the file updat
 {"source":"'Mañ an dud o tont.","target":"Les gens arrivent.","prediction":"Les gens vient.","ltscore":33.333333333333336,"mistakes_categories":["CAT_GRAMMAIRE"]}
 {"source":"Un devezh dilabour eo Lun Fask.","target":"Le lundi de Pâques est un jour férié.","prediction":"Le lundi de Pâques ai un jours fériée.","ltscore":25.0,"mistakes_categories":["CAT_HOMONYMES_PARONYMES","AGREEMENT"]}
 ```
+
+### Generating a report
+Adding the `-r` or `--report` flag will generate a markdown report with a KDE plot of the LTScore distribution, descriptive statistics, and an analysis of sentences based on the mistake categories. The report will be saved in the same directory as the input file with the name `ltscore_report.md`.
+To use it on the file available in `src/tests/fixtures/text-sample-br.ndjson`, which analyzes a breton texts, you would run:
+
+```sh
+ltscore -t prediction -l br -p tests/fixtures/openai-whisper-large-v3--cv-25.0-2026-03-09-br.jsonl -r
+```
+
+You would then get a report in the same directory as the input file with the ending `ltscore_report.md` containing a KDE plot of the LTScore distribution, descriptive statistics, and an analysis of sentences based on the mistake categories.
 
 ## LTScore as a library
 
