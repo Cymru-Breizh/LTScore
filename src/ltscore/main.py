@@ -146,12 +146,75 @@ class LTScore:
     def generate_report(self, target_column="prediction"):
         import polars as pl
         df = pl.read_ndjson(self.path)
+        report_title = f"{self.path.split('/')[-1]} ({list_of_languages[self.language]})"
 
         # Step 0: Check whether the file was processed already
-        ltscore_col = df.get_column("ltscore", default=pl.Series("ltscore", [None] * len(df)))
+        ltscore_col = df.get_column(
+            "ltscore", default=pl.Series("ltscore", [None] * len(df))
+        )
         if not (ltscore_col.dtype == pl.Float64):
             self.add_column_to_ndjson(target_column=target_column)
             df = pl.read_ndjson(self.path)
+
+        md_report = f"# LTScore Report: {report_title}\n\n"
+
+        # Part 1: Generate the KDE plot of the ltscore
+        md_report = f"# Part 1: Visualization\n\n"
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        plt.figure(figsize=(10, 6))
+        # Create a KDE plot of the ltscore distribution with a logistic y-axis to better visualize the distribution of the scores, especially if there are many low scores
+        sns.kdeplot(
+            df["ltscore"], fill=True, color="blue", alpha=0.5, label="LTScore KDE plot"
+        )
+        plt.legend(loc="upper center")
+        plt.ylabel("Density (KDE)")
+        plt.xlabel("LTScore / Tokens count per segment")
+        plt.title(f"Distribution of LTScore for {report_title}")
+
+        # Add the length of the segments to the plot
+        len_segments = [len(s.split(" ")) for s in df[target_column].to_list()]
+
+        print([l for l in len_segments if l > 20])
+        # Plot the length of the segments as a secondary x-axis the number elements in the y-axis is shown in the right side of the plot
+        plt.twinx()
+        sns.histplot(
+            len_segments,
+            bins=100,
+            color="orange",
+            alpha=0.5,
+            label="Segment Length Distribution",
+        )
+        plt.yscale("log")
+        plt.legend(loc="upper right")
+        plt.ylabel("Count (log scale)")
+
+        plot_path = Path(
+            "/".join(
+                self.path.split("/")[:-1]
+                + [self.path.split("/")[-1].split(".")[0] + "_ltscore_kde_plot.png"]
+            )
+        )
+        plt.savefig(plot_path)
+        plt.close()
+
+        md_report += f"![LTScore Distribution]({plot_path.name})\n\n"
+
+        # Part 2: Get samples by mistake category
+        md_report += f"# Part 2: Descriptive Statistics\n\n"
+        md_report += f"- Segments:\n\n"
+        md_report += f"  - Total number: **{df.height}**\n\n"
+        md_report += f"  - Average length: **{sum(len_segments) / len(len_segments):.2f} tokens**\n\n"
+
+        md_report += f"- Scores:\n\n"
+        md_report += f"  - Average: **{df['ltscore'].mean():.2f} mistakes found per 100 tokens**\n\n"
+        md_report += f"  - Median: **{df['ltscore'].median():.2f}**\n\n"
+        md_report += f"  - Standard Deviation of LTScore: **{df['ltscore'].std():.2f}**\n\n"
+
+        # Part 3: Get samples by mistake category
+        md_report += f"# Part 3: Mistake Categories Analysis\n\n"
+        md_report += f"## 3.1 Overview\n\n"
 
         # Step 1: Flatten the mistakes_categories and count frequencies
         mistake_counts = df.select(
@@ -210,11 +273,11 @@ class LTScore:
 
             result.append(dict_entry)
 
-        md_report = f"# LTScore Report: {self.path.split('/')[-1]} ({list_of_languages[self.language]})\n\n"
-
         # Print the result
-        for entry in result:
-            md_report += f"## Mistake Category: {entry['mistake']}\n\n"
+        md_report += f"## 3.2 Details\n\n"
+        md_report += f"The following sections provide examples of the most and least grammatical sentences for each mistake category that appears in more than 1% of the segments, along with their respective LTScore and reference sentence if available.\n\n"
+        for i, entry in enumerate(result):
+            md_report += f"### 3.2.{i+1} {entry['mistake']}\n\n"
             md_report += f"  - Least grammatical sentence: '{entry['highest_ltscore_sentence']}' (ltscore: {entry['highest_ltscore']})\n\n"
 
             if "reference_highest_ltscore_sentence" in entry:

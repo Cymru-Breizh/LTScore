@@ -12,6 +12,8 @@ dependencies = [
     "requests",
     "cysgor",
     "polars",
+    "plt",
+    "seaborn"
 ]
 license = {text = "MIT"}
 authors = [
