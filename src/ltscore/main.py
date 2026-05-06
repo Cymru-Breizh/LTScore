@@ -159,7 +159,7 @@ class LTScore:
         md_report = f"# LTScore Report: {report_title}\n\n"
 
         # Part 1: Generate the KDE plot of the ltscore
-        md_report = f"# Part 1: Visualization\n\n"
+        md_report += f"# Part 1: Visualization\n\n"
         import matplotlib.pyplot as plt
         import seaborn as sns
 
@@ -176,7 +176,6 @@ class LTScore:
         # Add the length of the segments to the plot
         len_segments = [len(s.split(" ")) for s in df[target_column].to_list()]
 
-        print([l for l in len_segments if l > 20])
         # Plot the length of the segments as a secondary x-axis the number elements in the y-axis is shown in the right side of the plot
         plt.twinx()
         sns.histplot(
@@ -215,6 +214,7 @@ class LTScore:
         # Part 3: Get samples by mistake category
         md_report += f"# Part 3: Mistake Categories Analysis\n\n"
         md_report += f"## 3.1 Overview\n\n"
+        # Add the tables to the report
 
         # Step 1: Flatten the mistakes_categories and count frequencies
         mistake_counts = df.select(
@@ -224,21 +224,24 @@ class LTScore:
             .alias("mistake_counts")
         ).unnest("mistake_counts")
         # remove rows where the mistakes_categories is `null`
-        mistake_counts = mistake_counts.filter(pl.col("mistakes_categories").is_not_null())
-        print(mistake_counts)
+        mistake_counts = mistake_counts.filter(pl.col("mistakes_categories").is_not_null()).sort("count", descending=True)
 
         # Step 2: Calculate percentages
         total_rows = df.height
         mistake_percentages = mistake_counts.with_columns(
             (pl.col("count") / total_rows * 100).alias("percentage")
-        ).filter(pl.col("percentage") > 1)
-        print(mistake_percentages)
+        )
+        md_report += f"The table below shows the frequency of each mistake category across the segments in the file.\n\n"
+        md_report += "| Mistake Category | Count | Percentage |\n"
+        md_report += "| --- | --- | --- |\n"
+        for row in mistake_percentages.iter_rows():
+            md_report += f"| {row[0]} | {row[1]} | {row[2]:.2f}% |\n"
 
         # Step 3: For each mistake above 1%, find the sentences with highest and lowest ltscore
         result = []
         has_reference = "target" in df.columns  # Check once outside the loop
 
-        for row in mistake_percentages.iter_rows():
+        for row in mistake_percentages.filter(pl.col("percentage") > 1).iter_rows():
             mistake_category = row[0]
             percentage = row[2]
 
@@ -278,14 +281,19 @@ class LTScore:
         md_report += f"The following sections provide examples of the most and least grammatical sentences for each mistake category that appears in more than 1% of the segments, along with their respective LTScore and reference sentence if available.\n\n"
         for i, entry in enumerate(result):
             md_report += f"### 3.2.{i+1} {entry['mistake']}\n\n"
-            md_report += f"  - Least grammatical sentence: '{entry['highest_ltscore_sentence']}' (ltscore: {entry['highest_ltscore']})\n\n"
+            md_report += f"- Least grammatical sentence containing this category of mistake:\n"
+            md_report += f"  - LTScore: {entry['highest_ltscore']}\n"
+            md_report += f"  - Segment: *{entry['highest_ltscore_sentence'].strip()}*\n"
 
             if "reference_highest_ltscore_sentence" in entry:
-                md_report += f"    - Reference sentence: '{entry['reference_highest_ltscore_sentence']}'\n\n"
-            md_report += f"  - Most grammatical sentence: '{entry['lowest_ltscore_sentence']}' (ltscore: {entry['lowest_ltscore']})\n\n"
+                md_report += f"  - Reference: *{entry['reference_highest_ltscore_sentence'].strip()}*\n\n"
+
+            md_report += f"- Most grammatical sentence containing this category of mistake:\n"
+            md_report += f"  - LTScore: {entry['lowest_ltscore']}\n"
+            md_report += f"  - Segment: *{entry['lowest_ltscore_sentence'].strip()}*\n"
 
             if "reference_lowest_ltscore_sentence" in entry:
-                md_report += f"    - Reference sentence: '{entry['reference_lowest_ltscore_sentence']}'\n\n"
+                md_report += f"  - Reference: *{entry['reference_lowest_ltscore_sentence'].strip()}*\n\n"
 
         # Print the markdown report to a file
         report_path =  Path("/".join(self.path.split("/")[:-1] + [self.path.split("/")[-1].split(".")[0] + "_ltscore_report.md"]))
