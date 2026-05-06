@@ -1,4 +1,4 @@
-from curses import wrapper
+from pathlib import Path
 
 import requests
 from cysgor import get_score, get_mistakes
@@ -18,6 +18,41 @@ class AnalysisResult:
     score: float
     mistakes: List[Mistake]
 
+list_of_languages = {
+    "ar": "Arabic",
+    "ast": "Asturian",
+    "be": "Belarusian",
+    "br": "Breton",
+    "ca": "Catalan",
+    "crh": "Crimean Tatar",
+    "cy": "Welsh",
+    "da": "Danish",
+    "de": "German",
+    "el": "Greek",
+    "en": "English",
+    "eo": "Esperanto",
+    "es": "Spanish",
+    "fa": "Persian",
+    "fr": "French",
+    "ga": "Irish",
+    "gl": "Galician",
+    "it": "Italian",
+    "ja": "Japanese",
+    "km": "Khmer",
+    "nl": "Dutch",
+    "pl": "Polish",
+    "pt": "Portuguese",
+    "ro": "Romanian",
+    "ru": "Russian",
+    "sk": "Slovak",
+    "sl": "Slovenian",
+    "sv": "Swedish",
+    "ta": "Tamil",
+    "tl": "Tagalog",
+    "uk": "Ukrainian",
+    "zh": "Chinese"
+}
+
 
 class LTScore:
     def __init__(self, language, input_text=None, *, path=None):
@@ -35,8 +70,6 @@ class LTScore:
             raise Exception("__ARGUMENT MISSING__: Missing a path or a text.")
 
     def get_text(self, input_file):
-        from pathlib import Path
-
         # Convert string path to a Path object
         path = Path(input_file)
 
@@ -52,7 +85,7 @@ class LTScore:
     def find_errors(self):
         import string
         language = self.language
-        text = self.input_text
+        text = self.input_text.strip()
         url = self.source_url
         data = {"text": text, "format": "text", "language": language}
 
@@ -177,24 +210,24 @@ class LTScore:
 
             result.append(dict_entry)
 
+        md_report = f"# LTScore Report: {self.path.split('/')[-1]} ({list_of_languages[self.language]})\n\n"
+
         # Print the result
         for entry in result:
-            print(f"Mistake: {entry['mistake']}")
-            print(
-                f"  - Least grammatical sentence: '{entry['highest_ltscore_sentence']}' (ltscore: {entry['highest_ltscore']})"
-            )
+            md_report += f"## Mistake Category: {entry['mistake']}\n\n"
+            md_report += f"  - Least grammatical sentence: '{entry['highest_ltscore_sentence']}' (ltscore: {entry['highest_ltscore']})\n\n"
+
             if "reference_highest_ltscore_sentence" in entry:
-                print(
-                    f"    - Reference sentence: '{entry['reference_highest_ltscore_sentence']}'"
-                )
-            print(
-                f"  - Most grammatical sentence: '{entry['lowest_ltscore_sentence']}' (ltscore: {entry['lowest_ltscore']})"
-            )
+                md_report += f"    - Reference sentence: '{entry['reference_highest_ltscore_sentence']}'\n\n"
+            md_report += f"  - Most grammatical sentence: '{entry['lowest_ltscore_sentence']}' (ltscore: {entry['lowest_ltscore']})\n\n"
+
             if "reference_lowest_ltscore_sentence" in entry:
-                print(
-                    f"    - Reference sentence: '{entry['reference_lowest_ltscore_sentence']}'"
-                )
-            print()
+                md_report += f"    - Reference sentence: '{entry['reference_lowest_ltscore_sentence']}'\n\n"
+
+        # Print the markdown report to a file
+        report_path =  Path("/".join(self.path.split("/")[:-1] + [self.path.split("/")[-1].split(".")[0] + "_ltscore_report.md"]))
+
+        report_path.write_text(md_report, encoding="utf-8")
 
         return None
 
@@ -213,39 +246,8 @@ def run_cli():
     parser.add_argument(
         "--language",
         "-l",
-        help="""Language code for the text being analyzed. Language codes:
-            ar (Arabic), 
-            ast (Asturian), 
-            be (Belarusian), 
-            br (Breton), 
-            ca (Catalan), 
-            cy (Welsh), 
-            da (Danish), 
-            de (German), 
-            el (Greek), 
-            en (English), 
-            eo (Esperanto), 
-            es (Spanish), 
-            fa (Persian), 
-            fr (French), 
-            ga (Irish), 
-            gl (Galician), 
-            it (Italian), 
-            ja (Japanese), 
-            km (Khmer), 
-            nl (Dutch), 
-            pl (Polish), 
-            pt (Portuguese), 
-            ro (Romanian), 
-            ru (Russian), 
-            sk (Slovak), 
-            sl (Slovenian), 
-            sv (Swedish), 
-            ta (Tamil), 
-            tl (Tagalog), 
-            uk (Ukrainian), 
-            zh (Chinese), 
-            crh (Crimean Tatar)""")
+        help=f"Language code for the text being analyzed. Language codes: {", ".join([f"{k}: {v}" for k, v in list_of_languages.items()])}",
+        required=True,)
 
     parser.add_argument("input_text",
       nargs="?",
