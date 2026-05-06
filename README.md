@@ -1,8 +1,46 @@
 # LTScore
 
-Cysill wrapper to score Welsh texts' grammaticality. As it connects to the Cysill API, ensure to have a working internet connexion before using it.
+LanguageTool wrapper for multilingual grammaticality assessment. For Welsh, it uses [CySgor](https://pypi.org/project/cysgor/), which is based on the Cysill grammar checker, but works with the same principles as LTScore.
 
-## Installation:
+## Utility
+In low resource languages settings, LTScore can be used as a tool to evaluate the grammaticality of generated text, such as machine translation outputs or conversational AIs. From this, it can be used to filter through training corpora (like sorting legit content from cheap autotranslated websites in fineweb), and improve training data quality, or to evaluate the outputs of a model during training or inference when other methods are not available or satisfactory.
+
+## Languages supported
+LTScore supports the following languages:
+- ar: Arabic
+- ast: Asturian
+- be: Belarusian
+- br: Breton
+- ca: Catalan
+- crh: Crimean Tatar
+- cy: Welsh
+- da: Danish
+- de: German
+- el: Greek
+- en: English
+- eo: Esperanto
+- es: Spanish
+- fa: Persian
+- fr: French
+- ga: Irish
+- gl: Galician
+- it: Italian
+- ja: Japanese
+- km: Khmer
+- nl: Dutch
+- pl: Polish
+- pt: Portuguese
+- ro: Romanian
+- ru: Russian
+- sk: Slovak
+- sl: Slovenian
+- sv: Swedish
+- ta: Tamil
+- tl: Tagalog
+- uk: Ukrainian
+- zh: Chinese
+
+## Installation
 ```sh
 pip install ltscore
 ```
@@ -22,7 +60,7 @@ There are two ways to use the CLI, either by entering a text file's path, or dir
 
 ```sh
 # With a text as a positional character
-ltscore -l br "Kalz a tud a zo amañ!"
+ltscore -l br "Kalz dud a zo amañ!"
 ```
 
 ```sh
@@ -59,7 +97,7 @@ Adding the `-r` or `--report` flag will generate a markdown report with a KDE pl
 To use it on the file available in `src/tests/fixtures/text-sample-br.ndjson`, which analyzes a breton texts, you would run:
 
 ```sh
-ltscore -t prediction -l br -p tests/fixtures/openai-whisper-large-v3--cv-25.0-2026-03-09-br.jsonl -r
+ltscore -rt prediction -l br -p tests/fixtures/openai-whisper-large-v3--cv-25.0-2026-03-09-br.jsonl
 ```
 
 You would then get a report in the same directory as the input file with the ending `ltscore_report.md` containing a KDE plot of the LTScore distribution, descriptive statistics, and an analysis of sentences based on the mistake categories.
