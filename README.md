@@ -97,6 +97,7 @@ Adding the `-r` or `--report` flag will generate a markdown report with a KDE pl
 To use it on the file available in `src/tests/fixtures/text-sample-br.ndjson`, which analyzes a breton texts, you would run:
 
 ```sh
+# Make sure you have pandoc installed in your system to generate the report in PDF format!
 ltscore -rt prediction -l br -p tests/fixtures/openai-whisper-large-v3--cv-25.0-2026-03-09-br.jsonl
 ```
 

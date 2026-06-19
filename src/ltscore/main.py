@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 
 import requests
 from cysgor import get_score, get_mistakes
@@ -174,7 +175,8 @@ class LTScore:
         plt.title(f"Distribution of LTScore for {report_title}")
 
         # Add the length of the segments to the plot
-        len_segments = [len(s.split(" ")) for s in df[target_column].to_list()]
+        df = df.with_columns((pl.col(target_column).str.split(" ").list.len()).alias("segment_length"))
+        len_segments = df["segment_length"].to_list()
 
         # Plot the length of the segments as a secondary x-axis the number elements in the y-axis is shown in the right side of the plot
         plt.twinx()
@@ -198,7 +200,7 @@ class LTScore:
         plt.savefig(plot_path)
         plt.close()
 
-        md_report += f"![LTScore Distribution]({plot_path.name})\n\n"
+        md_report += f"![LTScore Distribution]({plot_path})\n\n"
 
         # Part 2: Get samples by mistake category
         md_report += f"# Part 2: Descriptive Statistics\n\n"
@@ -295,10 +297,83 @@ class LTScore:
             if "reference_lowest_ltscore_sentence" in entry:
                 md_report += f"  - Reference: *{entry['reference_lowest_ltscore_sentence'].strip()}*\n\n"
 
+        md_report += f"## 3.3 Quartile-based Analyses\n\n"
+        md_report += f"Here we sample random segments from the quartiles of two distributions. First, from the length of  the segments (equal-sized chunks), second from the LTScores (value-range cutoffs). \n\n"
+
+        # Part 3.3.1: Sample random segments from the four quartiles of the length of the segments
+        md_report += f"### 3.3.1 Segments Length Quartiles\n\n"
+        md_report += f"This can show errors in the error flagging process. Note that the quartiles are based on equal-sized chunks.\n\n"
+
+        import random
+        _sorted_by_len = df.sort("segment_length")
+        _n = _sorted_by_len.height
+        _cuts = [0, _n // 4, _n // 2, 3 * _n // 4, _n]
+
+        length_quartile_bands = [
+            ("Q1 (shortest segments)", _sorted_by_len[_cuts[0]:_cuts[1]]),
+            ("Q2 (shorter than the average)", _sorted_by_len[_cuts[1]:_cuts[2]]),
+            ("Q3 (longer than the average)", _sorted_by_len[_cuts[2]:_cuts[3]]),
+            ("Q4 (longest segments)", _sorted_by_len[_cuts[3]:_cuts[4]]),
+        ]
+
+        for label, band in length_quartile_bands:
+            if band.height == 0:
+                continue
+            row = band[random.randint(0, band.height - 1)]
+            md_report += f"- **{label}: {band.height} segments**\n"
+            md_report += f"  - LTScore: {row['ltscore'][0]:.2f}\n"
+            md_report += f"  - Segment length: {row['segment_length'][0]} tokens\n"
+            md_report += f"  - Segment: *{row[target_column][0].strip()}*\n"
+            if has_reference:
+                md_report += f"  - Reference: *{row['target'][0].strip()}*\n"
+            categories = row["mistakes_categories"][0]
+            if categories is not None:
+                md_report += f"  - Mistake categories: {', '.join(categories)}\n"
+            else:
+                md_report += f"  - Mistake categories: none\n"
+            md_report += "\n"
+
+        # Part 3.3.2: Sample random segments from the four quartiles of the ltscore
+        md_report += f"### 3.3.2 LTScore Quartiles\n\n"
+        md_report += f"This can show what typical segments look like at each level of grammaticality. Note that the quartiles are based on value-range cutoffs (bands of equal width but different sizes) some quartiles may be empty due to the distribution of scores.\n\n"
+
+        sq1 = df["ltscore"].quantile(0.25)
+        sq2 = df["ltscore"].quantile(0.50)
+        sq3 = df["ltscore"].quantile(0.75)
+
+        score_quartile_bands = [
+            ("Q1 (most grammatical)", df.filter(pl.col("ltscore") <= sq1)),
+            ("Q2 (below average errors)", df.filter((pl.col("ltscore") > sq1) & (pl.col("ltscore") <= sq2))),
+            ("Q3 (above average errors)", df.filter((pl.col("ltscore") > sq2) & (pl.col("ltscore") <= sq3))),
+            ("Q4 (least grammatical)", df.filter(pl.col("ltscore") > sq3)),
+        ]
+
+        for label, band in score_quartile_bands:
+            if band.height == 0:
+                continue
+            row = band[random.randint(0, band.height - 1)]
+            md_report += f"- **{label}: {band.height} segments**\n"
+            md_report += f"  - LTScore: {row['ltscore'][0]:.2f}\n"
+            md_report += f"  - Segment: *{row[target_column][0].strip()}*\n"
+            if has_reference:
+                md_report += f"  - Reference: *{row['target'][0].strip()}*\n"
+            categories = row["mistakes_categories"][0]
+            if categories is not None:
+                md_report += f"  - Mistake categories: {', '.join(categories)}\n"
+            else:
+                md_report += f"  - Mistake categories: none\n"
+            md_report += "\n"
+
         # Print the markdown report to a file
         report_path =  Path("/".join(self.path.split("/")[:-1] + [self.path.split("/")[-1].split(".")[0] + "_ltscore_report.md"]))
 
         report_path.write_text(md_report, encoding="utf-8")
+
+        pdf_path = report_path.with_suffix(".pdf")
+        subprocess.run(
+            ["pandoc", str(report_path), "-o", str(pdf_path), "--pdf-engine=xelatex"],
+            check=True,
+        )
 
         return None
 

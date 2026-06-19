@@ -2,7 +2,7 @@
 
 # Part 1: Visualization
 
-![LTScore Distribution](openai-whisper-large-v3--cv-25_ltscore_kde_plot.png)
+![LTScore Distribution](tests/fixtures/openai-whisper-large-v3--cv-25_ltscore_kde_plot.png)
 
 # Part 2: Descriptive Statistics
 
@@ -76,4 +76,56 @@ The following sections provide examples of the most and least grammatical senten
   - LTScore: 5.26
   - Segment: *Ar pepet eo eo eo mont war internet a klask t'eo tout-rout ivez war benn a l'err di bavet.*
   - Reference: *Ar pep aesañ eo mont war internet ha klask titouroù diwar-benn al lec’h dibabet.*
+
+## 3.3 Quartile-based Analyses
+
+Here we sample random segments from the quartiles of two distributions. First, from the length of  the segments (equal-sized chunks), second from the LTScores (value-range cutoffs). 
+
+### 3.3.1 Segments Length Quartiles
+
+This can show errors in the error flagging process. Note that the quartiles are based on equal-sized chunks.
+
+- **Q1 (shortest segments): 873 segments**
+  - LTScore: 0.00
+  - Segment length: 3 tokens
+  - Segment: *Da c'hidokea.*
+  - Reference: *Dalc'hit ho ker.*
+  - Mistake categories: none
+
+- **Q2 (shorter than the average): 873 segments**
+  - LTScore: 0.00
+  - Segment length: 5 tokens
+  - Segment: *Tormez-vous an abaden !*
+  - Reference: *Tomm e vo an abadenn.*
+  - Mistake categories: none
+
+- **Q3 (longer than the average): 873 segments**
+  - LTScore: 0.00
+  - Segment length: 6 tokens
+  - Segment: *E gele e rao nour.*
+  - Reference: *Digeriñ a ra an nor.*
+  - Mistake categories: none
+
+- **Q4 (longest segments): 873 segments**
+  - LTScore: 0.00
+  - Segment length: 9 tokens
+  - Segment: *Peou an deus lec'h e dioc'h ne oa-kemaet.*
+  - Reference: *Piv en deus lavaret deoc'h ne oa ket mat ?*
+  - Mistake categories: none
+
+### 3.3.2 LTScore Quartiles
+
+This can show what typical segments look like at each level of grammaticality. Note that the quartiles are based on value-range cutoffs (bands of equal width but different sizes) some quartiles may be empty due to the distribution of scores.
+
+- **Q1 (most grammatical): 2779 segments**
+  - LTScore: 0.00
+  - Segment: *E plet azevet eo ar maezeg e gomz e soaznek.*
+  - Reference: *Pelec'h e vefe ur mezeg a gomzfe saozneg ?*
+  - Mistake categories: none
+
+- **Q4 (least grammatical): 713 segments**
+  - LTScore: 16.67
+  - Segment: *ur reioc'hvank e kraez ur ratrez.*
+  - Reference: *Ar re yaouank e-kreiz ar raktres !*
+  - Mistake categories: CASING
 
